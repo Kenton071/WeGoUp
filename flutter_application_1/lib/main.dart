@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'lessons_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -160,229 +161,284 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.dark_mode_outlined,
-                            color: Colors.grey.shade600),
+                        icon: Icon(
+                          Icons.dark_mode_outlined,
+                          color: Colors.grey.shade600,
+                        ),
                         onPressed: () {},
                       ),
                       const SizedBox(width: 12),
                       IconButton(
-                        icon: Icon(Icons.person_outline,
-                            color: Colors.grey.shade600),
+                        icon: Icon(
+                          Icons.person_outline,
+                          color: Colors.grey.shade600,
+                        ),
                         onPressed: () {},
                       ),
                     ],
                   ),
                 ),
-                // Dashboard Content
+                // ── INDEXED STACK: swaps content based on selected nav item ──
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Welcome Header
-                        const Text(
-                          'Welcome Back!',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Continue your trading education journey',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        // Overall Progress
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.shade200,
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: [
+                      // 0 - Dashboard
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Welcome Header
+                            const Text(
+                              'Welcome Back!',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Overall Progress',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Continue your trading education journey',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            // Overall Progress
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.shade200,
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
                                   ),
-                                  Text(
-                                    '48%',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey.shade700,
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Overall Progress',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        '48%',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: LinearProgressIndicator(
+                                      value: 0.48,
+                                      minHeight: 8,
+                                      backgroundColor: Colors.grey.shade200,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.blue.shade600,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: LinearProgressIndicator(
-                                  value: 0.48,
-                                  minHeight: 8,
-                                  backgroundColor: Colors.grey.shade200,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.blue.shade600,
+                            ),
+                            const SizedBox(height: 24),
+                            // Stats Grid
+                            GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 4,
+                              mainAxisSpacing: 16,
+                              crossAxisSpacing: 16,
+                              childAspectRatio: 1.5,
+                              children: [
+                                _buildStatCard(
+                                  'Lessons Completed',
+                                  '12/25',
+                                  Icons.emoji_events_outlined,
+                                  Colors.blue,
+                                ),
+                                _buildStatCard(
+                                  'Quizzes Passed',
+                                  '8',
+                                  Icons.check_circle_outline,
+                                  Colors.green,
+                                ),
+                                _buildStatCard(
+                                  'Simulation Hours',
+                                  '24.5',
+                                  Icons.flash_on_outlined,
+                                  Colors.purple,
+                                ),
+                                _buildStatCard(
+                                  'Trading Win Rate',
+                                  '62%',
+                                  Icons.trending_up,
+                                  Colors.orange,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 32),
+                            // Bottom Section
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Recent Achievements
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.grey.shade200,
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Recent Achievements',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        _buildAchievement(
+                                          'First Trade',
+                                          'Completed your first simulated trade',
+                                          '⭐',
+                                          Colors.yellow.shade700,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        _buildAchievement(
+                                          'Knowledge Seeker',
+                                          'Completed 5 lessons',
+                                          '📚',
+                                          Colors.blue.shade700,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // Stats Grid
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: 1.5,
-                          children: [
-                            _buildStatCard(
-                              'Lessons Completed',
-                              '12/25',
-                              Icons.emoji_events_outlined,
-                              Colors.blue,
-                            ),
-                            _buildStatCard(
-                              'Quizzes Passed',
-                              '8',
-                              Icons.check_circle_outline,
-                              Colors.green,
-                            ),
-                            _buildStatCard(
-                              'Simulation Hours',
-                              '24.5',
-                              Icons.flash_on_outlined,
-                              Colors.purple,
-                            ),
-                            _buildStatCard(
-                              'Trading Win Rate',
-                              '62%',
-                              Icons.trending_up,
-                              Colors.orange,
+                                const SizedBox(width: 24),
+                                // Recommended Next Steps
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.grey.shade200,
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Recommended Next Steps',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        _buildNextStep(
+                                          'Continue: Options Trading Basics',
+                                          'Lesson 6 of 15',
+                                        ),
+                                        const SizedBox(height: 12),
+                                        _buildNextStep(
+                                          'Try: Advanced Simulator',
+                                          'Test your skills in market volatility',
+                                        ),
+                                        const SizedBox(height: 12),
+                                        _buildNextStep(
+                                          'Quiz: Technical Analysis',
+                                          'Test your knowledge',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 32),
-                        // Bottom Section
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Recent Achievements
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.shade200,
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Recent Achievements',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    _buildAchievement(
-                                      'First Trade',
-                                      'Completed your first simulated trade',
-                                      '⭐',
-                                      Colors.yellow.shade700,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildAchievement(
-                                      'Knowledge Seeker',
-                                      'Completed 5 lessons',
-                                      '📚',
-                                      Colors.blue.shade700,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            // Recommended Next Steps
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.shade200,
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Recommended Next Steps',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    _buildNextStep(
-                                      'Continue: Options Trading Basics',
-                                      'Lesson 6 of 15',
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildNextStep(
-                                      'Try: Advanced Simulator',
-                                      'Test your skills in market volatility',
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildNextStep(
-                                      'Quiz: Technical Analysis',
-                                      'Test your knowledge',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                      ),
+
+                      // 1 - Lessons
+                      const LessonsScreen(),
+
+                      // 2 - Simulator (placeholder)
+                      const Center(
+                        child: Text(
+                          'Simulator — Coming Soon',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
                         ),
-                      ],
-                    ),
+                      ),
+
+                      // 3 - Progress (placeholder)
+                      const Center(
+                        child: Text(
+                          'Progress — Coming Soon',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ),
+
+                      // 4 - Quizzes (placeholder)
+                      const Center(
+                        child: Text(
+                          'Quizzes — Coming Soon',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ),
+
+                      // 5 - Community (placeholder)
+                      const Center(
+                        child: Text(
+                          'Community — Coming Soon',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ),
+
+                      // 6 - Backtesting (placeholder)
+                      const Center(
+                        child: Text(
+                          'Backtesting — Coming Soon',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -394,7 +450,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatCard(
-      String label, String value, IconData icon, Color color) {
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -417,24 +477,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
-              Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
+              Icon(icon, color: color, size: 24),
             ],
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -442,7 +492,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildAchievement(
-      String title, String subtitle, String emoji, Color bgColor) {
+    String title,
+    String subtitle,
+    String emoji,
+    Color bgColor,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -459,10 +513,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
-              child: Text(
-                emoji,
-                style: const TextStyle(fontSize: 20),
-              ),
+              child: Text(emoji, style: const TextStyle(fontSize: 20)),
             ),
           ),
           const SizedBox(width: 12),
@@ -480,10 +531,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -505,18 +553,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),
