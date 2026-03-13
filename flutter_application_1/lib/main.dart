@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/app_state.dart';
 import 'screens/lessons_screen.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_android/webview_flutter_android.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  WebViewPlatform.instance = AndroidWebViewPlatform();
+void main() {
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(),
@@ -77,8 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         height: 36,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Colors.blue, Colors.purple],
-                          ),
+                              colors: [Colors.blue, Colors.purple]),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
@@ -86,9 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const Text(
                         'TradeLearn',
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -110,9 +103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
+                                  horizontal: 16, vertical: 12),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? Colors.blue.shade50
@@ -121,13 +112,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
-                                    item.icon,
-                                    size: 20,
-                                    color: isSelected
-                                        ? Colors.blue.shade700
-                                        : Colors.grey.shade600,
-                                  ),
+                                  Icon(item.icon,
+                                      size: 20,
+                                      color: isSelected
+                                          ? Colors.blue.shade700
+                                          : Colors.grey.shade600),
                                   const SizedBox(width: 12),
                                   Text(
                                     item.label,
@@ -167,18 +156,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       IconButton(
-                        icon: Icon(
-                          Icons.dark_mode_outlined,
-                          color: Colors.grey.shade600,
-                        ),
+                        icon: Icon(Icons.dark_mode_outlined,
+                            color: Colors.grey.shade600),
                         onPressed: () {},
                       ),
                       const SizedBox(width: 12),
                       IconButton(
-                        icon: Icon(
-                          Icons.person_outline,
-                          color: Colors.grey.shade600,
-                        ),
+                        icon: Icon(Icons.person_outline,
+                            color: Colors.grey.shade600),
                         onPressed: () {},
                       ),
                     ],
@@ -207,9 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: Text(
                             '$label — Coming Soon',
                             style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
+                                fontSize: 18, color: Colors.grey),
                           ),
                         ),
                       ),
@@ -260,10 +243,9 @@ class _DashboardTab extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.shade200,
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
+                    color: Colors.grey.shade200,
+                    blurRadius: 10,
+                    offset: const Offset(0, 2))
               ],
             ),
             child: Column(
@@ -274,18 +256,15 @@ class _DashboardTab extends StatelessWidget {
                   children: [
                     const Text(
                       'Overall Progress',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     Text(
                       '${(state.overallProgress * 100).toInt()}%',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
-                      ),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700),
                     ),
                   ],
                 ),
@@ -296,9 +275,8 @@ class _DashboardTab extends StatelessWidget {
                     value: state.overallProgress,
                     minHeight: 8,
                     backgroundColor: Colors.grey.shade200,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.blue.shade600,
-                    ),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
                   ),
                 ),
               ],
@@ -315,30 +293,17 @@ class _DashboardTab extends StatelessWidget {
             crossAxisSpacing: 16,
             childAspectRatio: 1.5,
             children: [
+              _buildStatCard('Lessons Completed', state.lessonsProgress,
+                  Icons.emoji_events_outlined, Colors.blue),
+              _buildStatCard('Quizzes Passed', '${state.quizzesPassed}',
+                  Icons.check_circle_outline, Colors.green),
               _buildStatCard(
-                'Lessons Completed',
-                state.lessonsProgress,
-                Icons.emoji_events_outlined,
-                Colors.blue,
-              ),
-              _buildStatCard(
-                'Quizzes Passed',
-                '${state.quizzesPassed}',
-                Icons.check_circle_outline,
-                Colors.green,
-              ),
-              _buildStatCard(
-                'Simulation Hours',
-                state.simulationHours.toString(),
-                Icons.flash_on_outlined,
-                Colors.purple,
-              ),
-              _buildStatCard(
-                'Trading Win Rate',
-                state.winRateDisplay,
-                Icons.trending_up,
-                Colors.orange,
-              ),
+                  'Simulation Hours',
+                  state.simulationHours.toString(),
+                  Icons.flash_on_outlined,
+                  Colors.purple),
+              _buildStatCard('Trading Win Rate', state.winRateDisplay,
+                  Icons.trending_up, Colors.orange),
             ],
           ),
           const SizedBox(height: 32),
@@ -347,10 +312,14 @@ class _DashboardTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Achievements
-              Expanded(child: _AchievementsCard(state: state)),
+              Expanded(
+                child: _AchievementsCard(state: state),
+              ),
               const SizedBox(width: 24),
               // Next Steps
-              Expanded(child: _NextStepsCard(state: state)),
+              Expanded(
+                child: _NextStepsCard(state: state),
+              ),
             ],
           ),
         ],
@@ -359,11 +328,7 @@ class _DashboardTab extends StatelessWidget {
   }
 
   Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+      String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -371,10 +336,9 @@ class _DashboardTab extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
+              color: Colors.grey.shade200,
+              blurRadius: 10,
+              offset: const Offset(0, 2))
         ],
       ),
       child: Column(
@@ -384,17 +348,14 @@ class _DashboardTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
+              Text(label,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
               Icon(icon, color: color, size: 24),
             ],
           ),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
+          Text(value,
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -420,10 +381,9 @@ class _AchievementsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
+              color: Colors.grey.shade200,
+              blurRadius: 10,
+              offset: const Offset(0, 2))
         ],
       ),
       child: Column(
@@ -452,15 +412,13 @@ class _AchievementsCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Text('🎯', style: TextStyle(fontSize: 24)),
+                  Text('🎯', style: const TextStyle(fontSize: 24)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Complete your first lesson to earn achievements!',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade600),
                     ),
                   ),
                 ],
@@ -501,10 +459,8 @@ class _AchievementRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
-              child: Text(
-                achievement.emoji,
-                style: const TextStyle(fontSize: 20),
-              ),
+              child:
+                  Text(achievement.emoji, style: const TextStyle(fontSize: 20)),
             ),
           ),
           const SizedBox(width: 12),
@@ -512,18 +468,13 @@ class _AchievementRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  achievement.title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text(achievement.title,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text(
-                  achievement.subtitle,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
+                Text(achievement.subtitle,
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
           ),
@@ -557,10 +508,9 @@ class _NextStepsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
+              color: Colors.grey.shade200,
+              blurRadius: 10,
+              offset: const Offset(0, 2))
         ],
       ),
       child: Column(
@@ -572,12 +522,12 @@ class _NextStepsCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           if (allDone) ...[
-            const _NextStep(
+            _NextStep(
               title: '🏆 All Lessons Complete!',
               subtitle: 'You\'ve finished the full curriculum',
             ),
             const SizedBox(height: 12),
-            const _NextStep(
+            _NextStep(
               title: 'Try the Simulator',
               subtitle: 'Put your skills to the test',
             ),
@@ -587,7 +537,7 @@ class _NextStepsCard extends StatelessWidget {
               subtitle: nextLesson.tag,
             ),
             const SizedBox(height: 12),
-            const _NextStep(
+            _NextStep(
               title: 'Try: Advanced Simulator',
               subtitle: 'Test your skills in market volatility',
             ),
@@ -620,15 +570,12 @@ class _NextStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
+          Text(subtitle,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         ],
       ),
     );

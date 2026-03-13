@@ -34,18 +34,12 @@ class DragMatchQuiz extends InteractiveQuiz {
 
 class _DragMatchQuizState extends State<DragMatchQuiz> {
   final List<_MatchPair> _pairs = [
-    const _MatchPair(
-        term: 'Stock', definition: 'A share of ownership in a company'),
-    const _MatchPair(
-        term: 'Dividend', definition: 'Profit paid out to shareholders'),
-    const _MatchPair(
-      term: 'Market Cap',
-      definition: 'Total value of outstanding shares',
-    ),
-    const _MatchPair(
-      term: 'Bull Market',
-      definition: 'A period of rising stock prices',
-    ),
+    _MatchPair(term: 'Stock', definition: 'A share of ownership in a company'),
+    _MatchPair(term: 'Dividend', definition: 'Profit paid out to shareholders'),
+    _MatchPair(
+        term: 'Market Cap', definition: 'Total value of outstanding shares'),
+    _MatchPair(
+        term: 'Bull Market', definition: 'A period of rising stock prices'),
   ];
 
   late List<String> _shuffledDefs;
@@ -58,9 +52,7 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
   void initState() {
     super.initState();
     _shuffledDefs = _pairs.map((p) => p.definition).toList()..shuffle();
-    for (final p in _pairs) {
-      _matches[p.term] = null;
-    }
+    for (final p in _pairs) _matches[p.term] = null;
   }
 
   void _checkAnswers() {
@@ -82,7 +74,7 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _QuizHeader(
+        _QuizHeader(
           icon: '🔗',
           title: 'Match the Terms',
           subtitle: 'Drag each definition to the correct term',
@@ -157,26 +149,18 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
                                 ),
                                 const Spacer(),
                                 if (correct)
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                    size: 18,
-                                  )
+                                  const Icon(Icons.check_circle,
+                                      color: Colors.green, size: 18)
                                 else if (wrong)
-                                  const Icon(
-                                    Icons.cancel,
-                                    color: Colors.red,
-                                    size: 18,
-                                  ),
+                                  const Icon(Icons.cancel,
+                                      color: Colors.red, size: 18),
                               ],
                             ),
                             if (matched != null) ...[
                               const SizedBox(height: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
+                                    horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: correct
                                       ? Colors.green.shade100
@@ -200,9 +184,8 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
                             ] else
                               Container(
                                 margin: const EdgeInsets.only(top: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 6,
-                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
                                 decoration: BoxDecoration(
                                   border: Border.all(
                                     color: Colors.grey.shade300,
@@ -265,9 +248,7 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
                           child: Text(
                             def,
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
+                                color: Colors.white, fontSize: 13),
                           ),
                         ),
                       ),
@@ -277,7 +258,7 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
                       ),
                       child: _DefChip(text: def, used: isUsed),
                     );
-                  }),
+                  }).toList(),
                 ],
               ),
             ),
@@ -286,10 +267,9 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
         const SizedBox(height: 24),
         if (_submitted)
           _ResultBanner(
-            score: _score,
-            total: _pairs.length,
-            onContinue: widget.onComplete,
-          )
+              score: _score,
+              total: _pairs.length,
+              onContinue: widget.onComplete)
         else
           ElevatedButton(
             onPressed: allMatched ? _checkAnswers : null,
@@ -388,7 +368,7 @@ class _SequenceQuizState extends State<SequenceQuiz> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _QuizHeader(
+        _QuizHeader(
           icon: '📋',
           title: 'Put It In Order',
           subtitle:
@@ -433,10 +413,9 @@ class _SequenceQuizState extends State<SequenceQuiz> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.shade100,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
+                      color: Colors.grey.shade100,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2)),
                 ],
               ),
               child: Row(
@@ -454,11 +433,8 @@ class _SequenceQuizState extends State<SequenceQuiz> {
                     ),
                     child: Center(
                       child: isCorrect
-                          ? const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.green,
-                            )
+                          ? const Icon(Icons.check,
+                              size: 16, color: Colors.green)
                           : isWrong
                               ? const Icon(Icons.close,
                                   size: 16, color: Colors.red)
@@ -497,10 +473,9 @@ class _SequenceQuizState extends State<SequenceQuiz> {
         const SizedBox(height: 20),
         if (_submitted)
           _ResultBanner(
-            score: _score,
-            total: _correctOrder.length,
-            onContinue: widget.onComplete,
-          )
+              score: _score,
+              total: _correctOrder.length,
+              onContinue: widget.onComplete)
         else
           ElevatedButton(
             onPressed: _checkOrder,
@@ -531,37 +506,36 @@ class ChartSpotterQuiz extends InteractiveQuiz {
 class _ChartSpotterQuizState extends State<ChartSpotterQuiz> {
   // 10 candles: index, isGreen, isBullishEngulfing, isDoji
   final List<_Candle> _candles = [
-    const _Candle(open: 100, close: 105, high: 108, low: 98), // 0 green
-    const _Candle(open: 106, close: 103, high: 109, low: 101), // 1 red
-    const _Candle(open: 104, close: 102, high: 106, low: 100), // 2 red
-    const _Candle(open: 103, close: 103.2, high: 107, low: 99), // 3 doji ✓
-    const _Candle(
-      open: 102,
-      close: 108,
-      high: 110,
-      low: 100,
-    ), // 4 green bullish engulfing ✓
-    const _Candle(open: 107, close: 112, high: 114, low: 106), // 5 green
-    const _Candle(open: 111, close: 109, high: 113, low: 107), // 6 red
-    const _Candle(open: 110, close: 115, high: 117, low: 109), // 7 green
-    const _Candle(open: 114, close: 113.8, high: 118, low: 112), // 8 doji ✓
-    const _Candle(open: 114, close: 119, high: 121, low: 113), // 9 green
+    _Candle(open: 100, close: 105, high: 108, low: 98), // 0 green
+    _Candle(open: 106, close: 103, high: 109, low: 101), // 1 red
+    _Candle(open: 104, close: 102, high: 106, low: 100), // 2 red
+    _Candle(open: 103, close: 103.2, high: 107, low: 99), // 3 doji ✓
+    _Candle(
+        open: 102,
+        close: 108,
+        high: 110,
+        low: 100), // 4 green bullish engulfing ✓
+    _Candle(open: 107, close: 112, high: 114, low: 106), // 5 green
+    _Candle(open: 111, close: 109, high: 113, low: 107), // 6 red
+    _Candle(open: 110, close: 115, high: 117, low: 109), // 7 green
+    _Candle(open: 114, close: 113.8, high: 118, low: 112), // 8 doji ✓
+    _Candle(open: 114, close: 119, high: 121, low: 113), // 9 green
   ];
 
   final List<_QuizChallenge> _challenges = [
-    const _QuizChallenge(
+    _QuizChallenge(
       question: 'Tap all DOJI candles (open ≈ close)',
       correctIndices: {3, 8},
       hint:
           'Doji candles have tiny bodies — price opened and closed at nearly the same level.',
     ),
-    const _QuizChallenge(
+    _QuizChallenge(
       question: 'Tap the BULLISH ENGULFING candle',
       correctIndices: {4},
       hint:
           'A bullish engulfing candle is a large green candle that completely covers the previous red candle.',
     ),
-    const _QuizChallenge(
+    _QuizChallenge(
       question: 'Tap all RED (bearish) candles',
       correctIndices: {1, 2, 6},
       hint: 'Red candles close lower than they open — sellers were in control.',
@@ -642,15 +616,9 @@ class _ChartSpotterQuizState extends State<ChartSpotterQuiz> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: ['120', '115', '110', '105', '100', '95']
-                    .map(
-                      (l) => Text(
-                        l,
+                    .map((l) => Text(l,
                         style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xFF6E7681),
-                        ),
-                      ),
-                    )
+                            fontSize: 10, color: Color(0xFF6E7681))))
                     .toList(),
               ),
               const SizedBox(height: 12),
@@ -682,10 +650,8 @@ class _ChartSpotterQuizState extends State<ChartSpotterQuiz> {
                   _candles.length,
                   (i) => Text(
                     'C${i + 1}',
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: Color(0xFF6E7681),
-                    ),
+                    style:
+                        const TextStyle(fontSize: 9, color: Color(0xFF6E7681)),
                   ),
                 ),
               ),
@@ -708,10 +674,8 @@ class _ChartSpotterQuizState extends State<ChartSpotterQuiz> {
             ),
             child: Row(
               children: [
-                Text(
-                  _correct ? '✅' : '💡',
-                  style: const TextStyle(fontSize: 20),
-                ),
+                Text(_correct ? '✅' : '💡',
+                    style: const TextStyle(fontSize: 20)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -867,7 +831,7 @@ class RiskCalculatorQuiz extends InteractiveQuiz {
 
 class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
   final List<_RiskScenario> _scenarios = [
-    const _RiskScenario(
+    _RiskScenario(
       question:
           'You have a \$10,000 account. Using the 1% rule, what is the maximum you should risk on one trade?',
       answer: 100,
@@ -876,7 +840,7 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
       max: 500,
       hint: '1% of \$10,000 = \$100',
     ),
-    const _RiskScenario(
+    _RiskScenario(
       question:
           'A stock is at \$50 and you set a stop-loss at \$45. Your entry is \$50. What is your risk per share?',
       answer: 5,
@@ -885,7 +849,7 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
       max: 20,
       hint: '\$50 - \$45 = \$5 risk per share',
     ),
-    const _RiskScenario(
+    _RiskScenario(
       question:
           'Using the answer above (\$5 risk/share) and max risk of \$100, how many shares should you buy?',
       answer: 20,
@@ -933,7 +897,7 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _QuizHeader(
+        _QuizHeader(
           icon: '🧮',
           title: 'Risk Calculator',
           subtitle: 'Slide to the correct answer for each scenario',
@@ -957,10 +921,7 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
               Text(
                 s.question,
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  height: 1.5,
-                ),
+                    fontSize: 16, fontWeight: FontWeight.w600, height: 1.5),
               ),
               const SizedBox(height: 28),
 
@@ -1025,14 +986,12 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '${s.unit == '\$' ? s.unit : ''}${s.min}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                  ),
-                  Text(
-                    '${s.unit == '\$' ? s.unit : ''}${s.max}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                  ),
+                  Text('${s.unit == '\$' ? s.unit : ''}${s.min}',
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                  Text('${s.unit == '\$' ? s.unit : ''}${s.max}',
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                 ],
               ),
             ],
@@ -1053,10 +1012,8 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
             ),
             child: Row(
               children: [
-                Text(
-                  _correct ? '✅' : '💡',
-                  style: const TextStyle(fontSize: 20),
-                ),
+                Text(_correct ? '✅' : '💡',
+                    style: const TextStyle(fontSize: 20)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -1116,40 +1073,40 @@ class StrategyBuilderQuiz extends InteractiveQuiz {
 
 class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
   final List<_StrategyChallenge> _challenges = [
-    const _StrategyChallenge(
+    _StrategyChallenge(
       scenario:
           'You believe stock XYZ will RISE significantly next month. Which option strategy fits best?',
       options: [
         'Buy a Call Option',
         'Buy a Put Option',
         'Sell a Call Option',
-        'Short the Stock',
+        'Short the Stock'
       ],
       correctIndex: 0,
       explanation:
           'Buying a call gives you the right to purchase shares at a set price. If the stock rises, your call becomes valuable.',
     ),
-    const _StrategyChallenge(
+    _StrategyChallenge(
       scenario:
           'You own 100 shares of ABC and want to protect against a potential DROP in price.',
       options: [
         'Sell a Call Option',
         'Buy a Put Option',
         'Buy more shares',
-        'Buy a Call Option',
+        'Buy a Call Option'
       ],
       correctIndex: 1,
       explanation:
           'Buying a put is like insurance on your shares. If the stock drops, your put gains value, offsetting the loss.',
     ),
-    const _StrategyChallenge(
+    _StrategyChallenge(
       scenario:
           'You think DEF stock will stay FLAT for the next month. You want to generate income from it.',
       options: [
         'Buy a Call Option',
         'Buy a Put Option',
         'Sell a Covered Call',
-        'Buy a Straddle',
+        'Buy a Straddle'
       ],
       correctIndex: 2,
       explanation:
@@ -1191,7 +1148,7 @@ class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _QuizHeader(
+        _QuizHeader(
           icon: '🎯',
           title: 'Strategy Builder',
           subtitle: 'Pick the best options strategy for each scenario',
@@ -1223,10 +1180,7 @@ class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
                 child: Text(
                   challenge.scenario,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    height: 1.5,
-                  ),
+                      fontSize: 15, fontWeight: FontWeight.w500, height: 1.5),
                 ),
               ),
             ],
@@ -1237,11 +1191,10 @@ class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
         Text(
           'SELECT YOUR STRATEGY:',
           style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            color: Colors.grey.shade500,
-          ),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              color: Colors.grey.shade500),
         ),
         const SizedBox(height: 12),
 
@@ -1293,11 +1246,8 @@ class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
                     ),
                     child: Center(
                       child: isCorrect
-                          ? const Icon(
-                              Icons.check,
-                              color: Colors.green,
-                              size: 18,
-                            )
+                          ? const Icon(Icons.check,
+                              color: Colors.green, size: 18)
                           : isWrong
                               ? const Icon(Icons.close,
                                   color: Colors.red, size: 18)
@@ -1371,11 +1321,9 @@ class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
           ElevatedButton(
             onPressed: _next,
             style: _primaryBtnStyle(),
-            child: Text(
-              _currentIndex < _challenges.length - 1
-                  ? 'Next Scenario →'
-                  : 'See Results',
-            ),
+            child: Text(_currentIndex < _challenges.length - 1
+                ? 'Next Scenario →'
+                : 'See Results'),
           ),
       ],
     );
@@ -1400,7 +1348,7 @@ class AlgoRuleBuilderQuiz extends InteractiveQuiz {
 
 class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
   final List<_RuleChallenge> _challenges = [
-    const _RuleChallenge(
+    _RuleChallenge(
       question: 'Build a valid BUY rule using the pieces below:',
       correctOrder: [
         'IF',
@@ -1408,12 +1356,12 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
         'AND',
         'RSI < 70',
         'THEN',
-        'BUY',
+        'BUY'
       ],
       hint:
           'A good buy signal: price is trending up (above moving average) but not yet overbought (RSI under 70).',
     ),
-    const _RuleChallenge(
+    _RuleChallenge(
       question: 'Build a valid SELL rule to lock in profits:',
       correctOrder: [
         'IF',
@@ -1421,7 +1369,7 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
         'OR',
         'price < stop-loss',
         'THEN',
-        'SELL',
+        'SELL'
       ],
       hint:
           'Sell when you\'ve made 10% profit OR hit your stop-loss to limit losses.',
@@ -1509,11 +1457,10 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
         Text(
           'YOUR RULE:',
           style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            color: Colors.grey.shade500,
-          ),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              color: Colors.grey.shade500),
         ),
         const SizedBox(height: 10),
         DragTarget<String>(
@@ -1547,9 +1494,8 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
                       child: Text(
                         'Drag pieces here or tap them below →',
                         style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontStyle: FontStyle.italic,
-                        ),
+                            color: Colors.grey.shade400,
+                            fontStyle: FontStyle.italic),
                       ),
                     )
                   : Wrap(
@@ -1577,11 +1523,10 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
         Text(
           'AVAILABLE PIECES (tap to add):',
           style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            color: Colors.grey.shade500,
-          ),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              color: Colors.grey.shade500),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -1627,10 +1572,8 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _correct ? '✅' : '💡',
-                      style: const TextStyle(fontSize: 20),
-                    ),
+                    Text(_correct ? '✅' : '💡',
+                        style: const TextStyle(fontSize: 20)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -1650,9 +1593,7 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
                             Text(
                               'Correct: ${challenge.correctOrder.join(' ')}',
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                                  fontSize: 12, color: Colors.grey.shade600),
                             ),
                           ],
                         ],
@@ -1665,11 +1606,9 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
               ElevatedButton(
                 onPressed: _next,
                 style: _primaryBtnStyle(),
-                child: Text(
-                  _challengeIndex < _challenges.length - 1
-                      ? 'Next Challenge →'
-                      : 'See Results',
-                ),
+                child: Text(_challengeIndex < _challenges.length - 1
+                    ? 'Next Challenge →'
+                    : 'See Results'),
               ),
             ],
           )
@@ -1772,9 +1711,8 @@ class _QuizHeader extends StatelessWidget {
             color: Colors.blue.shade50,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Center(
-            child: Text(icon, style: const TextStyle(fontSize: 24)),
-          ),
+          child:
+              Center(child: Text(icon, style: const TextStyle(fontSize: 24))),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -1783,10 +1721,8 @@ class _QuizHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
@@ -1806,11 +1742,8 @@ class _ResultBanner extends StatelessWidget {
   final int total;
   final VoidCallback onContinue;
 
-  const _ResultBanner({
-    required this.score,
-    required this.total,
-    required this.onContinue,
-  });
+  const _ResultBanner(
+      {required this.score, required this.total, required this.onContinue});
 
   @override
   Widget build(BuildContext context) {
@@ -1824,8 +1757,7 @@ class _ResultBanner extends StatelessWidget {
             color: passed ? Colors.green.shade50 : Colors.orange.shade50,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: passed ? Colors.green.shade300 : Colors.orange.shade300,
-            ),
+                color: passed ? Colors.green.shade300 : Colors.orange.shade300),
           ),
           child: Row(
             children: [
@@ -1884,23 +1816,21 @@ class _MatchPair {
 
 class _Candle {
   final double open, close, high, low;
-  const _Candle({
-    required this.open,
-    required this.close,
-    required this.high,
-    required this.low,
-  });
+  const _Candle(
+      {required this.open,
+      required this.close,
+      required this.high,
+      required this.low});
 }
 
 class _QuizChallenge {
   final String question;
   final Set<int> correctIndices;
   final String hint;
-  const _QuizChallenge({
-    required this.question,
-    required this.correctIndices,
-    required this.hint,
-  });
+  const _QuizChallenge(
+      {required this.question,
+      required this.correctIndices,
+      required this.hint});
 }
 
 class _RiskScenario {
@@ -1937,9 +1867,6 @@ class _RuleChallenge {
   final String question;
   final List<String> correctOrder;
   final String hint;
-  const _RuleChallenge({
-    required this.question,
-    required this.correctOrder,
-    required this.hint,
-  });
+  const _RuleChallenge(
+      {required this.question, required this.correctOrder, required this.hint});
 }
