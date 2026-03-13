@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../models/app_state.dart';
 import 'interactive_quizzes.dart';
 
@@ -84,7 +84,7 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Video Section — thumbnail + copy link
+//  Video Section with embedded WebView YouTube player
 // ─────────────────────────────────────────────────────────────
 
 class _VideoSection extends StatefulWidget {
@@ -98,7 +98,13 @@ class _VideoSection extends StatefulWidget {
 }
 
 class _VideoSectionState extends State<_VideoSection> {
-  bool _copied = false;
+  late final WebViewController _controller;
+  bool _isLoading = true;
+
+  String _extractVideoId(String url) {
+    final uri = Uri.tryParse(url);
+    return uri?.queryParameters['v'] ?? '';
+  }
 
   Color _tagColor(String tag) {
     switch (tag) {
@@ -115,17 +121,39 @@ class _VideoSectionState extends State<_VideoSection> {
     }
   }
 
-  String _thumbnailUrl() {
-    final uri = Uri.tryParse(widget.lesson.youtubeUrl);
-    final id = uri?.queryParameters['v'] ?? '';
-    return 'https://img.youtube.com/vi/$id/hqdefault.jpg';
-  }
+  @override
+  void initState() {
+    super.initState();
+    final videoId = _extractVideoId(widget.lesson.youtubeUrl);
 
-  void _copyLink() async {
-    await Clipboard.setData(ClipboardData(text: widget.lesson.youtubeUrl));
-    setState(() => _copied = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) setState(() => _copied = false);
+    // Build an embed HTML page for the YouTube video
+    final embedHtml = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; background: #000; }
+    body { width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    iframe { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+  <iframe
+    src="https://www.youtube.com/embed/$videoId?playsinline=1&rel=0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowfullscreen>
+  </iframe>
+</body>
+</html>
+''';
+
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(NavigationDelegate(
+        onPageFinished: (_) => setState(() => _isLoading = false),
+      ))
+      ..loadHtmlString(embedHtml);
   }
 
   @override
@@ -182,131 +210,26 @@ class _VideoSectionState extends State<_VideoSection> {
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
               const SizedBox(height: 24),
 
-              // Video card
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D1117),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    // Thumbnail
-                    ClipRRect(
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(16)),
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Image.network(
-                              _thumbnailUrl(),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: const Color(0xFF1C2128),
-                                child: const Center(
-                                  child: Icon(Icons.play_circle_outline,
-                                      color: Colors.white54, size: 80),
-                                ),
-                              ),
-                            ),
-                            Container(
-                                color: Colors.black.withValues(alpha: 0.3)),
-                            Container(
-                              width: 72,
-                              height: 72,
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade600,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.play_arrow,
-                                  color: Colors.white, size: 40),
-                            ),
-                          ],
+              // Embedded YouTube player
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Stack(
+                    children: [
+                      WebViewWidget(controller: _controller),
+                      if (_isLoading)
+                        Container(
+                          color: Colors.black,
+                          child: const Center(
+                            child: CircularProgressIndicator(color: Colors.red),
+                          ),
                         ),
-                      ),
-                    ),
-
-                    // Link + copy button
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Open this link in your browser to watch the lesson, then come back to take the challenge.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                color: Colors.grey.shade400, fontSize: 14),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // URL box with copy button
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1C2128),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade700),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    widget.lesson.youtubeUrl,
-                                    style: TextStyle(
-                                      color: Colors.blue.shade300,
-                                      fontSize: 13,
-                                      fontFamily: 'monospace',
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                GestureDetector(
-                                  onTap: _copyLink,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: _copied
-                                          ? Colors.green.shade700
-                                          : Colors.grey.shade700,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _copied ? Icons.check : Icons.copy,
-                                          color: Colors.white,
-                                          size: 14,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          _copied ? 'Copied!' : 'Copy',
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // Challenge CTA
               Container(
@@ -378,8 +301,11 @@ class _QuizWrapper extends StatelessWidget {
   final void Function(int score, int total) onScore;
   final VoidCallback onComplete;
 
-  const _QuizWrapper(
-      {required this.lesson, required this.onScore, required this.onComplete});
+  const _QuizWrapper({
+    required this.lesson,
+    required this.onScore,
+    required this.onComplete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -431,11 +357,12 @@ class _ResultsScreen extends StatelessWidget {
   final int total;
   final VoidCallback onBack;
 
-  const _ResultsScreen(
-      {required this.lesson,
-      required this.score,
-      required this.total,
-      required this.onBack});
+  const _ResultsScreen({
+    required this.lesson,
+    required this.score,
+    required this.total,
+    required this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -475,25 +402,32 @@ class _ResultsScreen extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('$score/$total',
-                            style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: passed
-                                    ? Colors.green.shade700
-                                    : Colors.orange.shade700)),
-                        Text('${(value * 100).toInt()}%',
-                            style: TextStyle(
-                                fontSize: 14, color: Colors.grey.shade600)),
+                        Text(
+                          '$score/$total',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: passed
+                                ? Colors.green.shade700
+                                : Colors.orange.shade700,
+                          ),
+                        ),
+                        Text(
+                          '${(value * 100).toInt()}%',
+                          style: TextStyle(
+                              fontSize: 14, color: Colors.grey.shade600),
+                        ),
                       ],
                     ),
                   );
                 },
               ),
               const SizedBox(height: 24),
-              Text(passed ? '🎉 Lesson Complete!' : '💪 Keep Going!',
-                  style: const TextStyle(
-                      fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(
+                passed ? '🎉 Lesson Complete!' : '💪 Keep Going!',
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               Text(
                 passed
@@ -504,12 +438,14 @@ class _ResultsScreen extends StatelessWidget {
               ),
               if (earnedAchievements.isNotEmpty) ...[
                 const SizedBox(height: 32),
-                Text('ACHIEVEMENTS UNLOCKED',
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        color: Colors.grey.shade500)),
+                Text(
+                  'ACHIEVEMENTS UNLOCKED',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: Colors.grey.shade500),
+                ),
                 const SizedBox(height: 14),
                 Wrap(
                   spacing: 10,
@@ -637,19 +573,25 @@ class _Step extends StatelessWidget {
           child: Center(
             child: done
                 ? const Icon(Icons.check, color: Colors.white, size: 16)
-                : Text('$number',
+                : Text(
+                    '$number',
                     style: TextStyle(
-                        color: active ? Colors.white : Colors.grey.shade500,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13)),
+                      color: active ? Colors.white : Colors.grey.shade500,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 4),
-        Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                color: active ? Colors.blue.shade700 : Colors.grey.shade500,
-                fontWeight: active ? FontWeight.w600 : FontWeight.normal)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: active ? Colors.blue.shade700 : Colors.grey.shade500,
+            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
       ],
     );
   }
