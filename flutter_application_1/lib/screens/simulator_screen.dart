@@ -4,16 +4,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-// ─────────────────────────────────────────────────────────────
-//  API config — swap key here if needed
-// ─────────────────────────────────────────────────────────────
-
-const _kApiKey = 'qH2ltBzMW2ER0fDvCc0zPWHPBkXWwvHe';
+const _kApiKey = 'fPovQJbX1Z7XxKaBvBuhe1UgzwdUyL1W';
 const _kBase = 'https://financialmodelingprep.com/api/v3';
 
-// ─────────────────────────────────────────────────────────────
-//  Data models
-// ─────────────────────────────────────────────────────────────
+// ─── Data models ──────────────────────────────────────────────
 
 class _Stock {
   final String symbol;
@@ -95,9 +89,7 @@ class _Position {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Technical indicator computations
-// ─────────────────────────────────────────────────────────────
+// ─── Technical indicators ─────────────────────────────────────
 
 List<double?> _sma(List<_Candle> data, int period) {
   return List.generate(data.length, (i) {
@@ -167,9 +159,7 @@ List<double?> _rsi(List<_Candle> data, {int period = 14}) {
   return result;
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Stock list
-// ─────────────────────────────────────────────────────────────
+// ─── Stock list ───────────────────────────────────────────────
 
 const _kStocks = [
   _Stock('AAPL', 'Apple Inc.'),
@@ -182,9 +172,7 @@ const _kStocks = [
   _Stock('NFLX', 'Netflix Inc.'),
 ];
 
-// ─────────────────────────────────────────────────────────────
-//  Indicator config
-// ─────────────────────────────────────────────────────────────
+// ─── Indicator config ─────────────────────────────────────────
 
 class _Indicator {
   final String id;
@@ -208,36 +196,50 @@ const _kIndicators = [
       label: 'SMA 20',
       desc: 'Simple Moving Average (20)',
       level: 'Beginner',
-      color: Color(0xFFF59E0B)),
+      color: Color(0xFFD97706)),
   _Indicator(
       id: 'sma50',
       label: 'SMA 50',
       desc: 'Simple Moving Average (50)',
       level: 'Beginner',
-      color: Color(0xFF3B82F6)),
+      color: Color(0xFF2563EB)),
   _Indicator(
       id: 'ema20',
       label: 'EMA 20',
       desc: 'Exponential Moving Average (20)',
       level: 'Beginner',
-      color: Color(0xFF8B5CF6)),
+      color: Color(0xFF7C3AED)),
   _Indicator(
       id: 'bb',
       label: 'Bollinger',
       desc: 'Bollinger Bands (20, 2σ)',
       level: 'Intermediate',
-      color: Color(0xFF10B981)),
+      color: Color(0xFF059669)),
   _Indicator(
       id: 'rsi',
       label: 'RSI',
       desc: 'Relative Strength Index (14)',
       level: 'Advanced',
-      color: Color(0xFFEF4444)),
+      color: Color(0xFFDC2626)),
 ];
 
-// ─────────────────────────────────────────────────────────────
-//  Main Simulator Screen
-// ─────────────────────────────────────────────────────────────
+// ─── Light theme palette ──────────────────────────────────────
+
+const _bg = Color(0xFFF3F4F6); // cool light grey page bg
+const _surface = Color(0xFFFFFFFF); // white sidebar/header
+const _card = Color(0xFFFFFFFF); // white cards
+const _cardAlt = Color(0xFFF9FAFB); // subtle card bg
+const _border = Color(0xFFE5E7EB);
+const _textPrimary = Color(0xFF111827);
+const _textMuted = Color(0xFF9CA3AF);
+const _accent = Color(0xFF4F46E5);
+const _accentLight = Color(0xFFEEF2FF);
+const _green = Color(0xFF059669);
+const _greenLight = Color(0xFFD1FAE5);
+const _red = Color(0xFFDC2626);
+const _redLight = Color(0xFFFEE2E2);
+
+// ─── Main screen ─────────────────────────────────────────────
 
 class SimulatorScreen extends StatefulWidget {
   const SimulatorScreen({super.key});
@@ -247,29 +249,23 @@ class SimulatorScreen extends StatefulWidget {
 }
 
 class _SimulatorScreenState extends State<SimulatorScreen> {
-  // State
   _Stock _selected = _kStocks[0];
   Map<String, _Quote> _quotes = {};
   List<_Candle> _history = [];
   bool _loadingQuotes = true;
   bool _loadingHistory = false;
   String _timeframe = '1month';
+  String? _apiError;
 
-  // Portfolio
   double _balance = 100000;
   final Map<String, _Position> _positions = {};
 
-  // Order form
   final TextEditingController _sharesCtrl = TextEditingController();
   bool _isBuy = true;
 
-  // Indicators
   final Set<String> _activeIndicators = {'sma20'};
 
-  // Timer for auto-refresh
   Timer? _refreshTimer;
-
-  // Toast
   OverlayEntry? _toastEntry;
 
   @override
@@ -288,44 +284,85 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     super.dispose();
   }
 
-  // ── API calls ───────────────────────────────────────────────
+  // ── API calls ──────────────────────────────────────────────
 
   Future<void> _fetchQuotes() async {
     try {
       final symbols = _kStocks.map((s) => s.symbol).join(',');
       final uri = Uri.parse('$_kBase/quote/$symbols?apikey=$_kApiKey');
-      final res = await http.get(uri);
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
-        final List data = jsonDecode(res.body);
+        final body = jsonDecode(res.body);
+        // FMP returns an error map when limit exceeded or key invalid
+        if (body is Map && body.containsKey('Error Message')) {
+          if (mounted)
+            setState(() {
+              _apiError = body['Error Message'] as String?;
+              _loadingQuotes = false;
+            });
+          return;
+        }
+        final List data = body is List ? body : [];
+        if (data.isEmpty) {
+          if (mounted)
+            setState(() {
+              _apiError = 'No data returned. Check API key / plan limits.';
+              _loadingQuotes = false;
+            });
+          return;
+        }
         final map = <String, _Quote>{};
         for (final item in data) {
-          final q = _Quote.fromJson(item);
+          final q = _Quote.fromJson(item as Map<String, dynamic>);
           map[q.symbol] = q;
         }
         if (mounted)
           setState(() {
             _quotes = map;
             _loadingQuotes = false;
+            _apiError = null;
+          });
+      } else {
+        if (mounted)
+          setState(() {
+            _apiError = 'HTTP ${res.statusCode} — check API key.';
+            _loadingQuotes = false;
           });
       }
-    } catch (_) {
-      if (mounted) setState(() => _loadingQuotes = false);
+    } catch (e) {
+      if (mounted)
+        setState(() {
+          _apiError = 'Network error: $e';
+          _loadingQuotes = false;
+        });
     }
   }
 
   Future<void> _fetchHistory() async {
-    setState(() => _loadingHistory = true);
+    setState(() {
+      _loadingHistory = true;
+      _history = [];
+    });
     try {
       final limits = {'1week': 7, '1month': 30, '3months': 90, '1year': 365};
       final limit = limits[_timeframe] ?? 30;
       final uri = Uri.parse(
           '$_kBase/historical-price-full/${_selected.symbol}?timeseries=$limit&apikey=$_kApiKey');
-      final res = await http.get(uri);
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        final historical = data['historical'] as List? ?? [];
+        if (data is Map && data.containsKey('Error Message')) {
+          if (mounted)
+            setState(() {
+              _apiError = data['Error Message'] as String?;
+              _loadingHistory = false;
+            });
+          return;
+        }
+        final historical =
+            (data is Map ? data['historical'] : null) as List? ?? [];
         final candles = historical
-            .map((j) => _Candle.fromJson(j))
+            .map((j) => _Candle.fromJson(j as Map<String, dynamic>))
             .toList()
             .reversed
             .toList();
@@ -342,7 +379,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     }
   }
 
-  // ── Trading logic ───────────────────────────────────────────
+  // ── Trading logic ─────────────────────────────────────────
 
   void _placeOrder() {
     final shares = double.tryParse(_sharesCtrl.text) ?? 0;
@@ -352,7 +389,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     }
     final quote = _quotes[_selected.symbol];
     if (quote == null) {
-      _showToast('Price unavailable', isError: true);
+      _showToast('Price unavailable — API data not loaded', isError: true);
       return;
     }
     final cost = shares * quote.price;
@@ -408,7 +445,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     return total;
   }
 
-  // ── Toast ────────────────────────────────────────────────────
+  // ── Toast ─────────────────────────────────────────────────
 
   void _showToast(String msg, {bool isError = false}) {
     _toastEntry?.remove();
@@ -420,17 +457,14 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
         child: Center(
           child: Material(
             color: Colors.transparent,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+            child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color:
-                    isError ? const Color(0xFF7F1D1D) : const Color(0xFF065F46),
+                    isError ? const Color(0xFF7F1D1D) : const Color(0xFF064E3B),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                    color: isError
-                        ? const Color(0xFFDC2626)
-                        : const Color(0xFF059669)),
+                border:
+                    Border.all(color: isError ? _red : const Color(0xFF059669)),
               ),
               child: Text(msg,
                   style: const TextStyle(
@@ -449,19 +483,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     });
   }
 
-  // ── Colors / theme ───────────────────────────────────────────
-
-  static const _bg = Color(0xFF0A0E1A);
-  static const _surface = Color(0xFF0D1224);
-  static const _card = Color(0xFF111827);
-  static const _border = Color(0xFF1E2A3A);
-  static const _textPrimary = Color(0xFFE2E8F0);
-  static const _textMuted = Color(0xFF64748B);
-  static const _accent = Color(0xFF6366F1);
-  static const _green = Color(0xFF34D399);
-  static const _red = Color(0xFFEF4444);
-
-  // ── Build ────────────────────────────────────────────────────
+  // ── Build ─────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -478,16 +500,20 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
       color: _bg,
       child: Row(
         children: [
-          // ── Centre pane ─────────────────────────────────────
+          // ── Centre pane ──────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header bar
+                // Header
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  color: _surface,
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  decoration: const BoxDecoration(
+                    color: _surface,
+                    border:
+                        Border(bottom: BorderSide(color: _border, width: 1)),
+                  ),
                   child: Row(
                     children: [
                       Column(
@@ -496,22 +522,43 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                           const Text('Paper Trading Simulator',
                               style: TextStyle(
                                   color: _textPrimary,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.3)),
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700)),
                           const SizedBox(height: 2),
-                          Text(
-                              'Practice trading with virtual money · Live data',
+                          const Text('Practice with virtual money · Live data',
                               style:
                                   TextStyle(color: _textMuted, fontSize: 11)),
                         ],
                       ),
                       const Spacer(),
-                      _statPill(
-                          'PORTFOLIO',
-                          '\$${_portfolioValue.toStringAsFixed(2)}',
-                          const Color(0xFFA5B4FC)),
-                      const SizedBox(width: 12),
+                      // API error badge
+                      if (_apiError != null)
+                        Container(
+                          margin: const EdgeInsets.only(right: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _redLight,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFFCA5A5)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.warning_amber_rounded,
+                                  color: _red, size: 14),
+                              const SizedBox(width: 6),
+                              const Text('API error — check key/plan',
+                                  style: TextStyle(
+                                      color: _red,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                      _statPill('PORTFOLIO',
+                          '\$${_portfolioValue.toStringAsFixed(2)}', _accent),
+                      const SizedBox(width: 10),
                       _statPill(
                           'CASH', '\$${_balance.toStringAsFixed(2)}', _green),
                     ],
@@ -524,7 +571,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Stock header
+                        // Stock header row
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
@@ -540,7 +587,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                             fontWeight: FontWeight.w700)),
                                     const SizedBox(width: 10),
                                     Text(_selected.name,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                             color: _textMuted, fontSize: 12)),
                                   ],
                                 ),
@@ -550,20 +597,20 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                     Text(
                                         _loadingQuotes
                                             ? '—'
-                                            : '\$${price.toStringAsFixed(2)}',
+                                            : _apiError != null
+                                                ? 'No data'
+                                                : '\$${price.toStringAsFixed(2)}',
                                         style: const TextStyle(
                                             color: _textPrimary,
                                             fontSize: 22,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: -0.5)),
+                                            fontWeight: FontWeight.w700)),
                                     const SizedBox(width: 10),
-                                    if (!_loadingQuotes)
+                                    if (!_loadingQuotes && _apiError == null)
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
-                                          color: (isUp ? _green : _red)
-                                              .withOpacity(0.15),
+                                          color: isUp ? _greenLight : _redLight,
                                           borderRadius:
                                               BorderRadius.circular(4),
                                         ),
@@ -580,7 +627,6 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                               ],
                             ),
                             const Spacer(),
-                            // Timeframe buttons
                             _TimeframeBar(
                               selected: _timeframe,
                               onChanged: (tf) {
@@ -619,12 +665,40 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                           color: _accent, strokeWidth: 2)),
                                 )
                               : _history.isEmpty
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       height: 300,
                                       child: Center(
-                                          child: Text('No data',
-                                              style: TextStyle(
-                                                  color: _textMuted))),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.bar_chart_outlined,
+                                                color: _textMuted, size: 36),
+                                            const SizedBox(height: 10),
+                                            Text(
+                                                _apiError != null
+                                                    ? 'API error — no chart data'
+                                                    : 'No historical data',
+                                                style: const TextStyle(
+                                                    color: _textMuted,
+                                                    fontSize: 13)),
+                                            if (_apiError != null) ...[
+                                              const SizedBox(height: 6),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 32),
+                                                child: Text(_apiError!,
+                                                    style: const TextStyle(
+                                                        color: _red,
+                                                        fontSize: 11),
+                                                    textAlign:
+                                                        TextAlign.center),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
                                     )
                                   : _ChartView(
                                       candles: _history,
@@ -648,14 +722,15 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                   style: const TextStyle(
                                       color: _textMuted,
                                       fontSize: 11,
-                                      letterSpacing: 1)),
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5)),
                               const SizedBox(height: 12),
 
-                              // Buy / Sell toggle
+                              // Buy/Sell toggle
                               Container(
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: _surface,
+                                  color: _bg,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(color: _border),
                                 ),
@@ -685,7 +760,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text('SHARES',
+                                        const Text('SHARES',
                                             style: TextStyle(
                                                 color: _textMuted,
                                                 fontSize: 10,
@@ -696,31 +771,30 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                           keyboardType: TextInputType.number,
                                           style: const TextStyle(
                                               color: _textPrimary,
-                                              fontSize: 14,
-                                              fontFamily: 'monospace'),
+                                              fontSize: 14),
                                           decoration: InputDecoration(
                                             hintText: '0',
-                                            hintStyle:
-                                                TextStyle(color: _textMuted),
+                                            hintStyle: const TextStyle(
+                                                color: _textMuted),
                                             filled: true,
-                                            fillColor: _surface,
+                                            fillColor: _bg,
                                             border: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(6),
-                                              borderSide:
-                                                  BorderSide(color: _border),
+                                              borderSide: const BorderSide(
+                                                  color: _border),
                                             ),
                                             enabledBorder: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(6),
-                                              borderSide:
-                                                  BorderSide(color: _border),
+                                              borderSide: const BorderSide(
+                                                  color: _border),
                                             ),
                                             focusedBorder: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(6),
-                                              borderSide:
-                                                  BorderSide(color: _accent),
+                                              borderSide: const BorderSide(
+                                                  color: _accent),
                                             ),
                                             contentPadding:
                                                 const EdgeInsets.symmetric(
@@ -738,7 +812,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text('EST. COST',
+                                        const Text('EST. COST',
                                             style: TextStyle(
                                                 color: _textMuted,
                                                 fontSize: 10,
@@ -749,17 +823,19 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 12),
                                           decoration: BoxDecoration(
-                                            color: _surface,
+                                            color: _accentLight,
                                             borderRadius:
                                                 BorderRadius.circular(6),
-                                            border: Border.all(color: _border),
+                                            border: Border.all(
+                                                color: const Color(0xFFC7D2FE)),
                                           ),
                                           alignment: Alignment.centerLeft,
                                           child: Text(
                                             '\$${estCost.toStringAsFixed(2)}',
                                             style: const TextStyle(
-                                                color: Color(0xFFA5B4FC),
+                                                color: _accent,
                                                 fontSize: 14,
+                                                fontWeight: FontWeight.w600,
                                                 fontFamily: 'monospace'),
                                           ),
                                         ),
@@ -775,8 +851,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                   Expanded(
                                     child: _ActionButton(
                                       label: 'BUY',
-                                      bgColor: const Color(0xFF065F46),
-                                      borderColor: const Color(0xFF059669),
+                                      bgColor: _green,
                                       onPressed: _isBuy ? _placeOrder : null,
                                     ),
                                   ),
@@ -784,8 +859,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                   Expanded(
                                     child: _ActionButton(
                                       label: 'SELL',
-                                      bgColor: const Color(0xFF7F1D1D),
-                                      borderColor: const Color(0xFFDC2626),
+                                      bgColor: _red,
                                       onPressed: !_isBuy ? _placeOrder : null,
                                     ),
                                   ),
@@ -802,14 +876,16 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
             ),
           ),
 
-          // ── Right sidebar ───────────────────────────────────
+          // ── Right sidebar ────────────────────────────────
           Container(
             width: 240,
-            color: _surface,
+            decoration: const BoxDecoration(
+              color: _surface,
+              border: Border(left: BorderSide(color: _border)),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Market Overview header
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 16, 14, 8),
                   child: Text('MARKET OVERVIEW',
@@ -820,7 +896,6 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                           fontWeight: FontWeight.w600)),
                 ),
 
-                // Ticker list
                 Expanded(
                   child: ListView.builder(
                     itemCount: _kStocks.length,
@@ -843,12 +918,12 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                   ),
                 ),
 
-                // Positions
+                // Positions panel
                 Container(
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     border: Border(top: BorderSide(color: _border)),
                   ),
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -863,8 +938,8 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Text('No open positions',
-                              style:
-                                  TextStyle(color: _textMuted, fontSize: 12)),
+                              style: const TextStyle(
+                                  color: _textMuted, fontSize: 12)),
                         )
                       else
                         ..._positions.values.map((pos) {
@@ -890,7 +965,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                               fontWeight: FontWeight.w600)),
                                       Text(
                                           '${pos.shares.toStringAsFixed(0)} shares',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                               color: _textMuted, fontSize: 10)),
                                     ],
                                   ),
@@ -930,7 +1005,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: _card,
+        color: _cardAlt,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _border),
       ),
@@ -939,7 +1014,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
         children: [
           Text(label,
               style: const TextStyle(
-                  color: _textMuted, fontSize: 9, letterSpacing: 1)),
+                  color: _textMuted, fontSize: 9, letterSpacing: 0.8)),
           const SizedBox(height: 2),
           Text(value,
               style: TextStyle(
@@ -953,9 +1028,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Chart widget — custom painter
-// ─────────────────────────────────────────────────────────────
+// ─── Chart widget ─────────────────────────────────────────────
 
 class _ChartView extends StatelessWidget {
   final List<_Candle> candles;
@@ -977,7 +1050,7 @@ class _ChartView extends StatelessWidget {
           ),
         ),
         if (showRSI) ...[
-          const Divider(color: Color(0xFF1E2A3A), height: 1),
+          const Divider(color: _border, height: 1),
           SizedBox(
             height: 100,
             child: CustomPaint(
@@ -1001,15 +1074,10 @@ class _PricePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (candles.isEmpty) return;
 
-    final pad = const EdgeInsets.fromLTRB(8, 16, 64, 28);
+    const pad = EdgeInsets.fromLTRB(8, 16, 64, 28);
     final chartRect = Rect.fromLTRB(
-      pad.left,
-      pad.top,
-      size.width - pad.right,
-      size.height - pad.bottom,
-    );
+        pad.left, pad.top, size.width - pad.right, size.height - pad.bottom);
 
-    // Compute price range including all indicator values
     List<double> allVals = candles.map((c) => c.close).toList();
 
     final sma20 = indicators.contains('sma20') ? _sma(candles, 20) : null;
@@ -1035,12 +1103,13 @@ class _PricePainter extends CustomPainter {
     double yOf(double v) =>
         chartRect.bottom - ((v - minP) / range) * chartRect.height;
 
-    // Grid lines + labels
+    // Grid lines
     final gridPaint = Paint()
-      ..color = const Color(0xFF1E2A3A)
+      ..color = const Color(0xFFE5E7EB)
       ..strokeWidth = 0.5;
-    final labelStyle = const TextStyle(
-        color: Color(0xFF64748B), fontSize: 10, fontFamily: 'monospace');
+    const labelStyle = TextStyle(
+        color: Color(0xFF9CA3AF), fontSize: 10, fontFamily: 'monospace');
+
     for (int i = 0; i <= 4; i++) {
       final y = chartRect.top + (i / 4) * chartRect.height;
       canvas.drawLine(
@@ -1049,7 +1118,7 @@ class _PricePainter extends CustomPainter {
       _drawText(canvas, '\$${v.toStringAsFixed(1)}',
           Offset(chartRect.right + 4, y - 6), labelStyle);
     }
-    // x-axis date labels
+
     final step = math.max(1, (candles.length / 6).floor());
     for (int i = 0; i < candles.length; i += step) {
       final x = xOf(i);
@@ -1061,7 +1130,7 @@ class _PricePainter extends CustomPainter {
           canvas, label, Offset(x - 14, chartRect.bottom + 4), labelStyle);
     }
 
-    // Bollinger fill
+    // Bollinger bands
     if (bbs != null) {
       final validBBs =
           bbs.asMap().entries.where((e) => e.value != null).toList();
@@ -1079,16 +1148,16 @@ class _PricePainter extends CustomPainter {
         canvas.drawPath(
             fillPath,
             Paint()
-              ..color = const Color(0xFF10B981).withOpacity(0.08)
+              ..color = const Color(0xFF059669).withOpacity(0.06)
               ..style = PaintingStyle.fill);
 
         for (final which in ['upper', 'mid', 'lower']) {
           final p = Paint()
             ..color =
-                const Color(0xFF10B981).withOpacity(which == 'mid' ? 0.6 : 0.4)
+                const Color(0xFF059669).withOpacity(which == 'mid' ? 0.5 : 0.35)
             ..strokeWidth = which == 'mid' ? 1.0 : 0.8
-            ..style = PaintingStyle.stroke;
-          if (which == 'mid') p.strokeJoin = StrokeJoin.round;
+            ..style = PaintingStyle.stroke
+            ..strokeJoin = StrokeJoin.round;
           final path = Path();
           bool started = false;
           for (final e in validBBs) {
@@ -1108,7 +1177,6 @@ class _PricePainter extends CustomPainter {
       }
     }
 
-    // Overlay lines
     void drawLine(List<double?> vals, Color color, double width) {
       final paint = Paint()
         ..color = color
@@ -1128,13 +1196,14 @@ class _PricePainter extends CustomPainter {
       canvas.drawPath(path, paint);
     }
 
-    if (sma20 != null) drawLine(sma20, const Color(0xFFF59E0B), 1.5);
-    if (sma50 != null) drawLine(sma50, const Color(0xFF3B82F6), 1.5);
-    if (ema20 != null) drawLine(ema20, const Color(0xFF8B5CF6), 1.5);
+    if (sma20 != null) drawLine(sma20, const Color(0xFFD97706), 1.5);
+    if (sma50 != null) drawLine(sma50, const Color(0xFF2563EB), 1.5);
+    if (ema20 != null) drawLine(ema20, const Color(0xFF7C3AED), 1.5);
 
-    // Price line with gradient fill
+    // Price area + line
     final prices = candles.map((c) => c.close).toList();
     final isUp = prices.last >= prices.first;
+    final lineColor = isUp ? const Color(0xFF059669) : const Color(0xFFDC2626);
 
     final fillPath = Path();
     fillPath.moveTo(xOf(0), yOf(prices[0]));
@@ -1148,19 +1217,12 @@ class _PricePainter extends CustomPainter {
     canvas.drawPath(
       fillPath,
       Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            (isUp ? const Color(0xFF34D399) : const Color(0xFFEF4444))
-                .withOpacity(0.2),
-            Colors.transparent,
-          ],
-        ).createShader(chartRect),
+        ..color = lineColor.withOpacity(0.07)
+        ..style = PaintingStyle.fill,
     );
 
     final linePaint = Paint()
-      ..color = isUp ? const Color(0xFF34D399) : const Color(0xFFEF4444)
+      ..color = lineColor
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeJoin = StrokeJoin.round;
@@ -1174,9 +1236,9 @@ class _PricePainter extends CustomPainter {
 
   void _drawText(Canvas canvas, String text, Offset offset, TextStyle style) {
     final tp = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr)
+      ..layout();
     tp.paint(canvas, offset);
   }
 
@@ -1194,7 +1256,7 @@ class _RSIPainter extends CustomPainter {
     if (candles.length < 15) return;
     final rsiVals = _rsi(candles);
 
-    final pad = const EdgeInsets.fromLTRB(8, 8, 64, 20);
+    const pad = EdgeInsets.fromLTRB(8, 8, 64, 20);
     final chartRect = Rect.fromLTRB(
         pad.left, pad.top, size.width - pad.right, size.height - pad.bottom);
 
@@ -1202,36 +1264,35 @@ class _RSIPainter extends CustomPainter {
         chartRect.left + (i / (candles.length - 1)) * chartRect.width;
     double yOf(double v) => chartRect.bottom - (v / 100) * chartRect.height;
 
-    // Grid lines at 30, 50, 70
     for (final lvl in [30.0, 50.0, 70.0]) {
       final y = yOf(lvl);
       canvas.drawLine(
         Offset(chartRect.left, y),
         Offset(chartRect.right, y),
         Paint()
-          ..color = const Color(0xFF1E2A3A)
+          ..color = const Color(0xFFE5E7EB)
           ..strokeWidth = 0.5,
       );
-      final style = TextStyle(
-        color: lvl == 70
-            ? const Color(0xFFEF4444)
-            : lvl == 30
-                ? const Color(0xFF34D399)
-                : const Color(0xFF64748B),
-        fontSize: 9,
-        fontFamily: 'monospace',
-      );
       _drawText(
-          canvas, '${lvl.toInt()}', Offset(chartRect.right + 4, y - 5), style);
+          canvas,
+          '${lvl.toInt()}',
+          Offset(chartRect.right + 4, y - 5),
+          TextStyle(
+            color: lvl == 70
+                ? const Color(0xFFDC2626)
+                : lvl == 30
+                    ? const Color(0xFF059669)
+                    : const Color(0xFF9CA3AF),
+            fontSize: 9,
+            fontFamily: 'monospace',
+          ));
     }
 
-    // RSI label
-    _drawText(canvas, 'RSI(14)', const Offset(12, 10),
-        const TextStyle(color: Color(0xFF64748B), fontSize: 9));
+    _drawText(canvas, 'RSI(14)', const Offset(12, 4),
+        const TextStyle(color: Color(0xFF9CA3AF), fontSize: 9));
 
-    // RSI line
     final paint = Paint()
-      ..color = const Color(0xFFEF4444)
+      ..color = const Color(0xFFDC2626)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
     final path = Path();
@@ -1259,15 +1320,13 @@ class _RSIPainter extends CustomPainter {
   bool shouldRepaint(covariant _RSIPainter old) => old.candles != candles;
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Sub-widgets
-// ─────────────────────────────────────────────────────────────
+// ─── Sub-widgets ──────────────────────────────────────────────
 
 class _TimeframeBar extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
 
-  const _TimeframeBar({required this.selected, required this.onChanged});
+  _TimeframeBar({required this.selected, required this.onChanged});
 
   static const _options = [
     ('1week', '1W'),
@@ -1288,22 +1347,16 @@ class _TimeframeBar extends StatelessWidget {
             margin: const EdgeInsets.only(left: 4),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isActive
-                  ? const Color(0xFF6366F1).withOpacity(0.15)
-                  : Colors.transparent,
+              color: isActive ? _accentLight : Colors.transparent,
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: isActive
-                    ? const Color(0xFF6366F1).withOpacity(0.6)
-                    : const Color(0xFF1E2A3A),
+                color: isActive ? _accent : _border,
               ),
             ),
             child: Text(opt.$2,
                 style: TextStyle(
-                  color: isActive
-                      ? const Color(0xFFA5B4FC)
-                      : const Color(0xFF64748B),
-                  fontSize: 10,
+                  color: isActive ? _accent : _textMuted,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                 )),
           ),
@@ -1317,22 +1370,22 @@ class _IndicatorToolbar extends StatelessWidget {
   final Set<String> active;
   final ValueChanged<String> onToggle;
 
-  const _IndicatorToolbar({required this.active, required this.onToggle});
+  _IndicatorToolbar({required this.active, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: _cardAlt,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF1E2A3A)),
+        border: Border.all(color: _border),
       ),
       child: Row(
         children: [
           const Text('INDICATORS',
               style: TextStyle(
-                  color: Color(0xFF475569), fontSize: 9, letterSpacing: 1.2)),
+                  color: _textMuted, fontSize: 9, letterSpacing: 1.2)),
           const SizedBox(width: 12),
           Expanded(
             child: Wrap(
@@ -1350,29 +1403,27 @@ class _IndicatorToolbar extends StatelessWidget {
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: isActive
-                            ? ind.color.withOpacity(0.13)
+                            ? ind.color.withOpacity(0.10)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
-                          color: isActive ? ind.color : const Color(0xFF1E2A3A),
+                          color: isActive ? ind.color : _border,
                         ),
                       ),
                       child: Column(
                         children: [
                           Text(ind.label,
                               style: TextStyle(
-                                color: isActive
-                                    ? ind.color
-                                    : const Color(0xFF64748B),
+                                color: isActive ? ind.color : _textMuted,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               )),
                           const SizedBox(height: 1),
                           Text(ind.level,
                               style: const TextStyle(
-                                  color: Color(0xFF374151),
+                                  color: _textMuted,
                                   fontSize: 8,
-                                  letterSpacing: 0.4)),
+                                  letterSpacing: 0.3)),
                         ],
                       ),
                     ),
@@ -1394,7 +1445,7 @@ class _TickerRow extends StatelessWidget {
   final bool isUp;
   final VoidCallback onTap;
 
-  const _TickerRow({
+  _TickerRow({
     required this.stock,
     required this.quote,
     required this.isActive,
@@ -1410,15 +1461,13 @@ class _TickerRow extends StatelessWidget {
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive
-              ? const Color(0xFF6366F1).withOpacity(0.1)
-              : Colors.transparent,
+          color: isActive ? _accentLight : Colors.transparent,
           border: Border(
             left: BorderSide(
-              color: isActive ? const Color(0xFF6366F1) : Colors.transparent,
+              color: isActive ? _accent : Colors.transparent,
               width: 2,
             ),
-            bottom: const BorderSide(color: Color(0x0AFFFFFF)),
+            bottom: const BorderSide(color: _border, width: 0.5),
           ),
         ),
         child: Row(
@@ -1428,13 +1477,12 @@ class _TickerRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(stock.symbol,
-                      style: const TextStyle(
-                          color: Color(0xFFF1F5F9),
+                      style: TextStyle(
+                          color: isActive ? _accent : _textPrimary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600)),
                   Text(stock.name,
-                      style: const TextStyle(
-                          color: Color(0xFF475569), fontSize: 10),
+                      style: const TextStyle(color: _textMuted, fontSize: 10),
                       overflow: TextOverflow.ellipsis),
                 ],
               ),
@@ -1447,7 +1495,7 @@ class _TickerRow extends StatelessWidget {
                         ? '\$${quote!.price.toStringAsFixed(2)}'
                         : '—',
                     style: const TextStyle(
-                        color: Color(0xFFF1F5F9),
+                        color: _textPrimary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'monospace')),
@@ -1456,18 +1504,13 @@ class _TickerRow extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
-                      color: (isUp
-                              ? const Color(0xFF34D399)
-                              : const Color(0xFFEF4444))
-                          .withOpacity(0.15),
+                      color: isUp ? _greenLight : _redLight,
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
                       '${isUp ? '+' : ''}${quote!.changePct.toStringAsFixed(2)}%',
                       style: TextStyle(
-                        color: isUp
-                            ? const Color(0xFF34D399)
-                            : const Color(0xFFEF4444),
+                        color: isUp ? _green : _red,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1488,7 +1531,7 @@ class _OrderToggleBtn extends StatelessWidget {
   final bool isGreen;
   final VoidCallback onTap;
 
-  const _OrderToggleBtn({
+  _OrderToggleBtn({
     required this.label,
     required this.active,
     required this.isGreen,
@@ -1497,10 +1540,8 @@ class _OrderToggleBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor =
-        isGreen ? const Color(0xFF34D399) : const Color(0xFFEF4444);
-    final activeBg =
-        isGreen ? const Color(0xFF065F46) : const Color(0xFF7F1D1D);
+    final activeColor = isGreen ? _green : _red;
+    final activeBg = isGreen ? _greenLight : _redLight;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -1514,7 +1555,7 @@ class _OrderToggleBtn extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(label,
               style: TextStyle(
-                color: active ? activeColor : const Color(0xFF64748B),
+                color: active ? activeColor : _textMuted,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1,
@@ -1528,13 +1569,11 @@ class _OrderToggleBtn extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   final String label;
   final Color bgColor;
-  final Color borderColor;
   final VoidCallback? onPressed;
 
-  const _ActionButton({
+  _ActionButton({
     required this.label,
     required this.bgColor,
-    required this.borderColor,
     this.onPressed,
   });
 
@@ -1546,15 +1585,13 @@ class _ActionButton extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         height: 40,
         decoration: BoxDecoration(
-          color: onPressed != null ? bgColor : const Color(0xFF1E2A3A),
+          color: onPressed != null ? bgColor : const Color(0xFFE5E7EB),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-              color: onPressed != null ? borderColor : const Color(0xFF1E2A3A)),
         ),
         alignment: Alignment.center,
         child: Text(label,
             style: TextStyle(
-              color: onPressed != null ? Colors.white : const Color(0xFF64748B),
+              color: onPressed != null ? Colors.white : _textMuted,
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
