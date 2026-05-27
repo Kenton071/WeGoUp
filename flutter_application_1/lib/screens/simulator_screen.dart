@@ -4,8 +4,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-const _kApiKey = 'fPovQJbX1Z7XxKaBvBuhe1UgzwdUyL1W';
-const _kBase = 'https://financialmodelingprep.com/api/v3';
+// ─── Replace with your Alpha Vantage key (free at alphavantage.co) ───────────
+const _kAlphaKey = 'YOUR_ALPHA_VANTAGE_KEY';
+const _kAlphaBase = 'https://www.alphavantage.co/query';
 
 // ─── Data models ──────────────────────────────────────────────
 
@@ -35,17 +36,6 @@ class _Quote {
     required this.low,
     required this.volume,
   });
-
-  factory _Quote.fromJson(Map<String, dynamic> j) => _Quote(
-        symbol: j['symbol'] ?? '',
-        price: (j['price'] ?? 0).toDouble(),
-        change: (j['change'] ?? 0).toDouble(),
-        changePct: (j['changesPercentage'] ?? 0).toDouble(),
-        open: (j['open'] ?? 0).toDouble(),
-        high: (j['dayHigh'] ?? 0).toDouble(),
-        low: (j['dayLow'] ?? 0).toDouble(),
-        volume: (j['volume'] ?? 0).toDouble(),
-      );
 }
 
 class _Candle {
@@ -64,15 +54,6 @@ class _Candle {
     required this.low,
     required this.volume,
   });
-
-  factory _Candle.fromJson(Map<String, dynamic> j) => _Candle(
-        date: j['date'] ?? '',
-        open: (j['open'] ?? 0).toDouble(),
-        close: (j['close'] ?? 0).toDouble(),
-        high: (j['high'] ?? 0).toDouble(),
-        low: (j['low'] ?? 0).toDouble(),
-        volume: (j['volume'] ?? 0).toDouble(),
-      );
 }
 
 class _Position {
@@ -225,10 +206,10 @@ const _kIndicators = [
 
 // ─── Light theme palette ──────────────────────────────────────
 
-const _bg = Color(0xFFF3F4F6); // cool light grey page bg
-const _surface = Color(0xFFFFFFFF); // white sidebar/header
-const _card = Color(0xFFFFFFFF); // white cards
-const _cardAlt = Color(0xFFF9FAFB); // subtle card bg
+const _bg = Color(0xFFF3F4F6);
+const _surface = Color(0xFFFFFFFF);
+const _card = Color(0xFFFFFFFF);
+const _cardAlt = Color(0xFFF9FAFB);
 const _border = Color(0xFFE5E7EB);
 const _textPrimary = Color(0xFF111827);
 const _textMuted = Color(0xFF9CA3AF);
@@ -265,16 +246,20 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
 
   final Set<String> _activeIndicators = {'sma20'};
 
+  // Rate-limit guard: Alpha Vantage free = 25 req/day, 5 req/min.
+  // We fetch the selected stock's quote + history on load, and only
+  // refresh the selected quote on a 60-second timer (not all 8 symbols).
   Timer? _refreshTimer;
   OverlayEntry? _toastEntry;
 
   @override
   void initState() {
     super.initState();
-    _fetchQuotes();
+    _fetchSelectedQuote();
     _fetchHistory();
-    _refreshTimer =
-        Timer.periodic(const Duration(seconds: 30), (_) => _fetchQuotes());
+    // Refresh selected stock quote every 60 s to stay within rate limits.
+    _refreshTimer = Timer.periodic(
+        const Duration(seconds: 60), (_) => _fetchSelectedQuote());
   }
 
   @override
@@ -284,97 +269,143 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     super.dispose();
   }
 
-  // ── API calls ──────────────────────────────────────────────
+  // ── API helpers ────────────────────────────────────────────
 
-  Future<void> _fetchQuotes() async {
+  /// Fetches a GLOBAL_QUOTE for a single symbol and caches it.
+  Future<void> _fetchQuoteFor(String symbol) async {
     try {
-      final symbols = _kStocks.map((s) => s.symbol).join(',');
-      final uri = Uri.parse('$_kBase/quote/$symbols?apikey=$_kApiKey');
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      final uri = Uri.parse(
+          '$_kAlphaBase?function=GLOBAL_QUOTE&symbol=$symbol&apikey=$_kAlphaKey');
+      final res = await http.get(uri).timeout(const Duration(seconds: 12));
       if (res.statusCode == 200) {
-        final body = jsonDecode(res.body);
-        // FMP returns an error map when limit exceeded or key invalid
-        if (body is Map && body.containsKey('Error Message')) {
-          if (mounted)
-            setState(() {
-              _apiError = body['Error Message'] as String?;
-              _loadingQuotes = false;
-            });
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+
+        // Alpha Vantage returns an Information field when rate-limited.
+        if (data.containsKey('Information') || data.containsKey('Note')) {
+          final msg = (data['Information'] ?? data['Note']).toString();
+          if (mounted) setState(() => _apiError = msg);
           return;
         }
-        final List data = body is List ? body : [];
-        if (data.isEmpty) {
-          if (mounted)
-            setState(() {
-              _apiError = 'No data returned. Check API key / plan limits.';
-              _loadingQuotes = false;
-            });
-          return;
-        }
-        final map = <String, _Quote>{};
-        for (final item in data) {
-          final q = _Quote.fromJson(item as Map<String, dynamic>);
-          map[q.symbol] = q;
-        }
-        if (mounted)
+
+        final gq = data['Global Quote'] as Map<String, dynamic>?;
+        if (gq == null || gq.isEmpty) return;
+
+        final price = double.tryParse(gq['05. price'] ?? '0') ?? 0;
+        final change = double.tryParse(gq['09. change'] ?? '0') ?? 0;
+        final changePct = double.tryParse(
+                (gq['10. change percent'] as String? ?? '0%')
+                    .replaceAll('%', '')) ??
+            0;
+        final quote = _Quote(
+          symbol: symbol,
+          price: price,
+          change: change,
+          changePct: changePct,
+          open: double.tryParse(gq['02. open'] ?? '0') ?? 0,
+          high: double.tryParse(gq['03. high'] ?? '0') ?? 0,
+          low: double.tryParse(gq['04. low'] ?? '0') ?? 0,
+          volume: double.tryParse(gq['06. volume'] ?? '0') ?? 0,
+        );
+
+        if (mounted) {
           setState(() {
-            _quotes = map;
-            _loadingQuotes = false;
+            _quotes = {..._quotes, symbol: quote};
             _apiError = null;
           });
-      } else {
-        if (mounted)
-          setState(() {
-            _apiError = 'HTTP ${res.statusCode} — check API key.';
-            _loadingQuotes = false;
-          });
+        }
+      } else if (res.statusCode == 403) {
+        if (mounted) setState(() => _apiError = 'HTTP 403 — API key rejected.');
       }
     } catch (e) {
-      if (mounted)
-        setState(() {
-          _apiError = 'Network error: $e';
-          _loadingQuotes = false;
-        });
+      if (mounted) setState(() => _apiError = 'Network error: $e');
     }
   }
 
+  /// Fetches only the currently-selected stock's quote (saves rate-limit budget).
+  Future<void> _fetchSelectedQuote() async {
+    if (mounted) setState(() => _loadingQuotes = true);
+    await _fetchQuoteFor(_selected.symbol);
+    if (mounted) setState(() => _loadingQuotes = false);
+  }
+
+  /// Fetches daily OHLCV history for the selected symbol via TIME_SERIES_DAILY.
   Future<void> _fetchHistory() async {
-    setState(() {
-      _loadingHistory = true;
-      _history = [];
-    });
+    if (mounted) {
+      setState(() {
+        _loadingHistory = true;
+        _history = [];
+      });
+    }
+
     try {
-      final limits = {'1week': 7, '1month': 30, '3months': 90, '1year': 365};
-      final limit = limits[_timeframe] ?? 30;
-      final uri = Uri.parse(
-          '$_kBase/historical-price-full/${_selected.symbol}?timeseries=$limit&apikey=$_kApiKey');
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      // 'compact' returns last 100 data points; 'full' returns up to 20 years.
+      final outputSize = (_timeframe == '1year') ? 'full' : 'compact';
+
+      final uri = Uri.parse('$_kAlphaBase?function=TIME_SERIES_DAILY'
+          '&symbol=${_selected.symbol}'
+          '&outputsize=$outputSize'
+          '&apikey=$_kAlphaKey');
+
+      final res = await http.get(uri).timeout(const Duration(seconds: 15));
+
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (data is Map && data.containsKey('Error Message')) {
-          if (mounted)
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+
+        if (data.containsKey('Information') || data.containsKey('Note')) {
+          final msg = (data['Information'] ?? data['Note']).toString();
+          if (mounted) {
             setState(() {
-              _apiError = data['Error Message'] as String?;
+              _apiError = msg;
               _loadingHistory = false;
             });
+          }
           return;
         }
-        final historical =
-            (data is Map ? data['historical'] : null) as List? ?? [];
-        final candles = historical
-            .map((j) => _Candle.fromJson(j as Map<String, dynamic>))
+
+        final series = data['Time Series (Daily)'] as Map<String, dynamic>?;
+        if (series == null) {
+          if (mounted) setState(() => _loadingHistory = false);
+          return;
+        }
+
+        final limits = {'1week': 7, '1month': 30, '3months': 90, '1year': 365};
+        final limit = limits[_timeframe] ?? 30;
+
+        final candles = series.entries
+            .take(limit)
+            .map((e) {
+              final v = e.value as Map<String, dynamic>;
+              return _Candle(
+                date: e.key,
+                open: double.tryParse(v['1. open'] ?? '0') ?? 0,
+                high: double.tryParse(v['2. high'] ?? '0') ?? 0,
+                low: double.tryParse(v['3. low'] ?? '0') ?? 0,
+                close: double.tryParse(v['4. close'] ?? '0') ?? 0,
+                volume: double.tryParse(v['5. volume'] ?? '0') ?? 0,
+              );
+            })
             .toList()
             .reversed
             .toList();
-        if (mounted)
+
+        if (mounted) {
           setState(() {
             _history = candles;
             _loadingHistory = false;
+            _apiError = null;
           });
+        }
+      } else if (res.statusCode == 403) {
+        if (mounted) {
+          setState(() {
+            _apiError = 'HTTP 403 — API key rejected.';
+            _loadingHistory = false;
+          });
+        }
       } else {
         if (mounted) setState(() => _loadingHistory = false);
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) setState(() => _loadingHistory = false);
     }
   }
@@ -389,7 +420,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     }
     final quote = _quotes[_selected.symbol];
     if (quote == null) {
-      _showToast('Price unavailable — API data not loaded', isError: true);
+      _showToast('Price unavailable — load quote first', isError: true);
       return;
     }
     final cost = shares * quote.price;
@@ -531,7 +562,6 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                         ],
                       ),
                       const Spacer(),
-                      // API error badge
                       if (_apiError != null)
                         Container(
                           margin: const EdgeInsets.only(right: 12),
@@ -597,7 +627,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                     Text(
                                         _loadingQuotes
                                             ? '—'
-                                            : _apiError != null
+                                            : _apiError != null && quote == null
                                                 ? 'No data'
                                                 : '\$${price.toStringAsFixed(2)}',
                                         style: const TextStyle(
@@ -605,7 +635,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                             fontSize: 22,
                                             fontWeight: FontWeight.w700)),
                                     const SizedBox(width: 10),
-                                    if (!_loadingQuotes && _apiError == null)
+                                    if (!_loadingQuotes && quote != null)
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 3),
@@ -725,8 +755,6 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5)),
                               const SizedBox(height: 12),
-
-                              // Buy/Sell toggle
                               Container(
                                 height: 36,
                                 decoration: BoxDecoration(
@@ -752,7 +780,6 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                 ),
                               ),
                               const SizedBox(height: 14),
-
                               Row(
                                 children: [
                                   Expanded(
@@ -845,7 +872,6 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                 ],
                               ),
                               const SizedBox(height: 14),
-
                               Row(
                                 children: [
                                   Expanded(
@@ -895,7 +921,6 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                           letterSpacing: 1.2,
                           fontWeight: FontWeight.w600)),
                 ),
-
                 Expanded(
                   child: ListView.builder(
                     itemCount: _kStocks.length,
@@ -909,8 +934,13 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                         quote: q,
                         isActive: isActive,
                         isUp: up,
-                        onTap: () {
+                        onTap: () async {
                           setState(() => _selected = stock);
+                          // Fetch quote for newly selected stock if we
+                          // don't have it yet, then fetch its history.
+                          if (!_quotes.containsKey(stock.symbol)) {
+                            await _fetchQuoteFor(stock.symbol);
+                          }
                           _fetchHistory();
                         },
                       );
@@ -1103,7 +1133,6 @@ class _PricePainter extends CustomPainter {
     double yOf(double v) =>
         chartRect.bottom - ((v - minP) / range) * chartRect.height;
 
-    // Grid lines
     final gridPaint = Paint()
       ..color = const Color(0xFFE5E7EB)
       ..strokeWidth = 0.5;
@@ -1130,7 +1159,6 @@ class _PricePainter extends CustomPainter {
           canvas, label, Offset(x - 14, chartRect.bottom + 4), labelStyle);
     }
 
-    // Bollinger bands
     if (bbs != null) {
       final validBBs =
           bbs.asMap().entries.where((e) => e.value != null).toList();
@@ -1200,7 +1228,6 @@ class _PricePainter extends CustomPainter {
     if (sma50 != null) drawLine(sma50, const Color(0xFF2563EB), 1.5);
     if (ema20 != null) drawLine(ema20, const Color(0xFF7C3AED), 1.5);
 
-    // Price area + line
     final prices = candles.map((c) => c.close).toList();
     final isUp = prices.last >= prices.first;
     final lineColor = isUp ? const Color(0xFF059669) : const Color(0xFFDC2626);
