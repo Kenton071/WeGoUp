@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/app_state.dart';
 import 'screens/lessons_screen.dart';
+import 'screens/simulator_screen.dart';
 
 void main() {
   runApp(
@@ -174,15 +175,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: IndexedStack(
                     index: _selectedIndex,
                     children: [
-                      // 0 - Dashboard (live data)
+                      // 0 - Dashboard
                       const _DashboardTab(),
 
                       // 1 - Lessons
                       const LessonsScreen(),
 
-                      // 2–6 Placeholders
+                      // 2 - Simulator ← ADDED
+                      const SimulatorScreen(),
+
+                      // 3–6 Placeholders
                       ...[
-                        'Simulator',
                         'Progress',
                         'Quizzes',
                         'Community',
