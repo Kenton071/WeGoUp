@@ -412,7 +412,7 @@ class _AchievementsCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Text('🎯', style: const TextStyle(fontSize: 24)),
+                  const Text('🎯', style: TextStyle(fontSize: 24)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -522,12 +522,12 @@ class _NextStepsCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           if (allDone) ...[
-            _NextStep(
+            const _NextStep(
               title: '🏆 All Lessons Complete!',
               subtitle: 'You\'ve finished the full curriculum',
             ),
             const SizedBox(height: 12),
-            _NextStep(
+            const _NextStep(
               title: 'Try the Simulator',
               subtitle: 'Put your skills to the test',
             ),
@@ -537,7 +537,7 @@ class _NextStepsCard extends StatelessWidget {
               subtitle: nextLesson.tag,
             ),
             const SizedBox(height: 12),
-            _NextStep(
+            const _NextStep(
               title: 'Try: Advanced Simulator',
               subtitle: 'Test your skills in market volatility',
             ),

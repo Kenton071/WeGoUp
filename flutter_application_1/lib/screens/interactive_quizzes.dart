@@ -34,11 +34,11 @@ class DragMatchQuiz extends InteractiveQuiz {
 
 class _DragMatchQuizState extends State<DragMatchQuiz> {
   final List<_MatchPair> _pairs = [
-    _MatchPair(term: 'Stock', definition: 'A share of ownership in a company'),
-    _MatchPair(term: 'Dividend', definition: 'Profit paid out to shareholders'),
-    _MatchPair(
+    const _MatchPair(term: 'Stock', definition: 'A share of ownership in a company'),
+    const _MatchPair(term: 'Dividend', definition: 'Profit paid out to shareholders'),
+    const _MatchPair(
         term: 'Market Cap', definition: 'Total value of outstanding shares'),
-    _MatchPair(
+    const _MatchPair(
         term: 'Bull Market', definition: 'A period of rising stock prices'),
   ];
 
@@ -52,7 +52,9 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
   void initState() {
     super.initState();
     _shuffledDefs = _pairs.map((p) => p.definition).toList()..shuffle();
-    for (final p in _pairs) _matches[p.term] = null;
+    for (final p in _pairs) {
+      _matches[p.term] = null;
+    }
   }
 
   void _checkAnswers() {
@@ -74,7 +76,7 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _QuizHeader(
+        const _QuizHeader(
           icon: '🔗',
           title: 'Match the Terms',
           subtitle: 'Drag each definition to the correct term',
@@ -258,7 +260,7 @@ class _DragMatchQuizState extends State<DragMatchQuiz> {
                       ),
                       child: _DefChip(text: def, used: isUsed),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
@@ -368,7 +370,7 @@ class _SequenceQuizState extends State<SequenceQuiz> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _QuizHeader(
+        const _QuizHeader(
           icon: '📋',
           title: 'Put It In Order',
           subtitle:
@@ -506,36 +508,36 @@ class ChartSpotterQuiz extends InteractiveQuiz {
 class _ChartSpotterQuizState extends State<ChartSpotterQuiz> {
   // 10 candles: index, isGreen, isBullishEngulfing, isDoji
   final List<_Candle> _candles = [
-    _Candle(open: 100, close: 105, high: 108, low: 98), // 0 green
-    _Candle(open: 106, close: 103, high: 109, low: 101), // 1 red
-    _Candle(open: 104, close: 102, high: 106, low: 100), // 2 red
-    _Candle(open: 103, close: 103.2, high: 107, low: 99), // 3 doji ✓
-    _Candle(
+    const _Candle(open: 100, close: 105, high: 108, low: 98), // 0 green
+    const _Candle(open: 106, close: 103, high: 109, low: 101), // 1 red
+    const _Candle(open: 104, close: 102, high: 106, low: 100), // 2 red
+    const _Candle(open: 103, close: 103.2, high: 107, low: 99), // 3 doji ✓
+    const _Candle(
         open: 102,
         close: 108,
         high: 110,
         low: 100), // 4 green bullish engulfing ✓
-    _Candle(open: 107, close: 112, high: 114, low: 106), // 5 green
-    _Candle(open: 111, close: 109, high: 113, low: 107), // 6 red
-    _Candle(open: 110, close: 115, high: 117, low: 109), // 7 green
-    _Candle(open: 114, close: 113.8, high: 118, low: 112), // 8 doji ✓
-    _Candle(open: 114, close: 119, high: 121, low: 113), // 9 green
+    const _Candle(open: 107, close: 112, high: 114, low: 106), // 5 green
+    const _Candle(open: 111, close: 109, high: 113, low: 107), // 6 red
+    const _Candle(open: 110, close: 115, high: 117, low: 109), // 7 green
+    const _Candle(open: 114, close: 113.8, high: 118, low: 112), // 8 doji ✓
+    const _Candle(open: 114, close: 119, high: 121, low: 113), // 9 green
   ];
 
   final List<_QuizChallenge> _challenges = [
-    _QuizChallenge(
+    const _QuizChallenge(
       question: 'Tap all DOJI candles (open ≈ close)',
       correctIndices: {3, 8},
       hint:
           'Doji candles have tiny bodies — price opened and closed at nearly the same level.',
     ),
-    _QuizChallenge(
+    const _QuizChallenge(
       question: 'Tap the BULLISH ENGULFING candle',
       correctIndices: {4},
       hint:
           'A bullish engulfing candle is a large green candle that completely covers the previous red candle.',
     ),
-    _QuizChallenge(
+    const _QuizChallenge(
       question: 'Tap all RED (bearish) candles',
       correctIndices: {1, 2, 6},
       hint: 'Red candles close lower than they open — sellers were in control.',
@@ -831,7 +833,7 @@ class RiskCalculatorQuiz extends InteractiveQuiz {
 
 class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
   final List<_RiskScenario> _scenarios = [
-    _RiskScenario(
+    const _RiskScenario(
       question:
           'You have a \$10,000 account. Using the 1% rule, what is the maximum you should risk on one trade?',
       answer: 100,
@@ -840,7 +842,7 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
       max: 500,
       hint: '1% of \$10,000 = \$100',
     ),
-    _RiskScenario(
+    const _RiskScenario(
       question:
           'A stock is at \$50 and you set a stop-loss at \$45. Your entry is \$50. What is your risk per share?',
       answer: 5,
@@ -849,7 +851,7 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
       max: 20,
       hint: '\$50 - \$45 = \$5 risk per share',
     ),
-    _RiskScenario(
+    const _RiskScenario(
       question:
           'Using the answer above (\$5 risk/share) and max risk of \$100, how many shares should you buy?',
       answer: 20,
@@ -897,7 +899,7 @@ class _RiskCalculatorQuizState extends State<RiskCalculatorQuiz> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _QuizHeader(
+        const _QuizHeader(
           icon: '🧮',
           title: 'Risk Calculator',
           subtitle: 'Slide to the correct answer for each scenario',
@@ -1073,7 +1075,7 @@ class StrategyBuilderQuiz extends InteractiveQuiz {
 
 class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
   final List<_StrategyChallenge> _challenges = [
-    _StrategyChallenge(
+    const _StrategyChallenge(
       scenario:
           'You believe stock XYZ will RISE significantly next month. Which option strategy fits best?',
       options: [
@@ -1086,7 +1088,7 @@ class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
       explanation:
           'Buying a call gives you the right to purchase shares at a set price. If the stock rises, your call becomes valuable.',
     ),
-    _StrategyChallenge(
+    const _StrategyChallenge(
       scenario:
           'You own 100 shares of ABC and want to protect against a potential DROP in price.',
       options: [
@@ -1099,7 +1101,7 @@ class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
       explanation:
           'Buying a put is like insurance on your shares. If the stock drops, your put gains value, offsetting the loss.',
     ),
-    _StrategyChallenge(
+    const _StrategyChallenge(
       scenario:
           'You think DEF stock will stay FLAT for the next month. You want to generate income from it.',
       options: [
@@ -1148,7 +1150,7 @@ class _StrategyBuilderQuizState extends State<StrategyBuilderQuiz> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _QuizHeader(
+        const _QuizHeader(
           icon: '🎯',
           title: 'Strategy Builder',
           subtitle: 'Pick the best options strategy for each scenario',
@@ -1348,7 +1350,7 @@ class AlgoRuleBuilderQuiz extends InteractiveQuiz {
 
 class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
   final List<_RuleChallenge> _challenges = [
-    _RuleChallenge(
+    const _RuleChallenge(
       question: 'Build a valid BUY rule using the pieces below:',
       correctOrder: [
         'IF',
@@ -1361,7 +1363,7 @@ class _AlgoRuleBuilderQuizState extends State<AlgoRuleBuilderQuiz> {
       hint:
           'A good buy signal: price is trending up (above moving average) but not yet overbought (RSI under 70).',
     ),
-    _RuleChallenge(
+    const _RuleChallenge(
       question: 'Build a valid SELL rule to lock in profits:',
       correctOrder: [
         'IF',

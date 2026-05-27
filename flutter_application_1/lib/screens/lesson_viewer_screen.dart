@@ -138,7 +138,7 @@ class _VideoSectionState extends State<_VideoSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _StepRow(currentStep: 1),
+              const _StepRow(currentStep: 1),
               const SizedBox(height: 28),
 
               // Tag + duration
@@ -391,7 +391,7 @@ class _QuizWrapper extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _StepRow(currentStep: 2),
+              const _StepRow(currentStep: 2),
               const SizedBox(height: 28),
               _buildQuiz(),
             ],
@@ -451,7 +451,7 @@ class _ResultsScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _StepRow(currentStep: 3),
+              const _StepRow(currentStep: 3),
               const SizedBox(height: 36),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: percentage),
